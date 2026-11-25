@@ -28,7 +28,17 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/dashboard");
+    // send each role to its own page
+    const role = result.data.user.role;
+
+    if (role === "admin") {
+      router.push("/admin");
+    } else if (role === "staff") {
+      router.push("/staff");
+    } else {
+      router.push("/dashboard");
+    }
+
     router.refresh();
   }
 
