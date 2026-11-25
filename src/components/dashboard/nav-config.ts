@@ -42,6 +42,7 @@ export const adminNavItems: NavItem[] = [
   { label: "Pending Requests", href: "/admin/requests", iconName: "ArrowDownUp" },
   { label: "Customer Management", href: "/admin/customers", iconName: "Users" },
   { label: "Bank Accounts", href: "/admin/accounts", iconName: "Wallet" },
+  { label: "Transactions", href: "/admin/transactions", iconName: "History" },
   { label: "Loan Management", href: "/admin/loans", iconName: "BadgeDollarSign" },
   { label: "Bank Settings", href: "/admin/settings", iconName: "Settings" },
 ];
