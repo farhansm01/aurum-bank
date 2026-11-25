@@ -5,6 +5,7 @@ import { bankAccounts, loans, moneyRequests, transactions, user } from "@/db/sch
 import { requireRole } from "@/lib/session";
 import { formatDate, money } from "@/lib/format";
 import StatusBadge from "@/components/StatusBadge";
+import { AdminVolumeChart, AdminAccountDistChart } from "@/components/dashboard/AdminCharts";
 import {
   Users,
   Wallet,
@@ -63,6 +64,29 @@ export default async function AdminDashboardPage() {
     .select({ count: sql<number>`count(*)` })
     .from(moneyRequests)
     .where(eq(moneyRequests.status, "pending"));
+
+  // 9. Account Distribution data for pie chart
+  const accountTypesRows = await db
+    .select({
+      type: bankAccounts.type,
+      count: sql<number>`count(*)`,
+    })
+    .from(bankAccounts)
+    .groupBy(bankAccounts.type);
+
+  const accountDistData = accountTypesRows.map((r) => ({
+    name: `${r.type.charAt(0).toUpperCase() + r.type.slice(1)} Accounts`,
+    value: Number(r.count),
+  }));
+
+  // 10. Volume Comparison data
+  const volumeData = [
+    {
+      month: "Total Inflow / Outflow",
+      deposits: Number(depSum?.total || 0),
+      withdrawals: Number(withSum?.total || 0),
+    },
+  ];
 
   // Recent system-wide transactions
   const recentTxns = await db
@@ -143,7 +167,6 @@ export default async function AdminDashboardPage() {
           </p>
         </div>
 
-        {/* Quick Pending Alert if any */}
         {Number(pendingRequestsCount?.count || 0) > 0 && (
           <Link
             href="/admin/requests"
@@ -170,9 +193,7 @@ export default async function AdminDashboardPage() {
                   <span className="text-xs font-semibold uppercase tracking-wider text-muted">
                     {s.label}
                   </span>
-                  <div
-                    className={`flex h-9 w-9 items-center justify-center rounded-xl ${s.color}`}
-                  >
+                  <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${s.color}`}>
                     <Icon size={18} />
                   </div>
                 </div>
@@ -182,6 +203,25 @@ export default async function AdminDashboardPage() {
             </Link>
           );
         })}
+      </div>
+
+      {/* Interactive Charts Grid */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="rounded-2xl border border-line bg-card p-6 shadow-xs">
+          <div className="mb-4">
+            <h2 className="text-lg font-bold text-primary">Transaction Volume: Deposits vs Withdrawals</h2>
+            <p className="text-xs text-muted">Total capital flow through the banking engine</p>
+          </div>
+          <AdminVolumeChart data={volumeData} />
+        </div>
+
+        <div className="rounded-2xl border border-line bg-card p-6 shadow-xs">
+          <div className="mb-4">
+            <h2 className="text-lg font-bold text-primary">Account Distribution</h2>
+            <p className="text-xs text-muted">Breakdown of customer account types</p>
+          </div>
+          <AdminAccountDistChart data={accountDistData} />
+        </div>
       </div>
 
       {/* Recent Ledger Activity */}

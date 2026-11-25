@@ -8,6 +8,7 @@ import { fetchTransactions } from "@/features/transactions/transactionsSlice";
 import { fetchLoans } from "@/features/loans/loansSlice";
 import { money } from "@/lib/format";
 import StatusBadge from "@/components/StatusBadge";
+import { CustomerSpendingChart, CustomerTxnDistChart } from "@/components/dashboard/CustomerCharts";
 import { ArrowUpRight, ArrowDownLeft, ArrowLeftRight, Wallet } from "lucide-react";
 
 export default function CustomerOverviewPage({ userName }: { userName: string }) {
@@ -34,6 +35,28 @@ export default function CustomerOverviewPage({ userName }: { userName: string })
     .reduce((sum, t) => sum + Number(t.amount || 0), 0);
 
   const activeLoans = loans.filter((l) => l.status === "active" || l.status === "approved");
+
+  // Chart data: customer spending history
+  const spendingChartData = transactions
+    .filter((t) => (t.type === "withdrawal" || t.type === "transfer") && t.status === "completed")
+    .slice(0, 7)
+    .map((t) => ({
+      date: new Date(t.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+      spending: Number(t.amount || 0),
+    }))
+    .reverse();
+
+  // Chart data: transaction type distribution
+  const typeCounts: Record<string, number> = {};
+  transactions.forEach((t) => {
+    const key = t.type.replace("_", " ");
+    typeCounts[key] = (typeCounts[key] || 0) + 1;
+  });
+
+  const txnDistData = Object.entries(typeCounts).map(([name, value]) => ({
+    name: name.charAt(0).toUpperCase() + name.slice(1),
+    value,
+  }));
 
   return (
     <div className="space-y-8">
@@ -114,6 +137,25 @@ export default function CustomerOverviewPage({ userName }: { userName: string })
             -${money(totalWithdrawals.toFixed(2))}
           </p>
           <p className="mt-1 text-xs text-muted">Completed withdrawal transactions</p>
+        </div>
+      </div>
+
+      {/* Visual Analytics Grid */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="rounded-2xl border border-line bg-card p-6 shadow-xs">
+          <div className="mb-4">
+            <h2 className="text-lg font-bold text-primary">Outflow & Spending Trend</h2>
+            <p className="text-xs text-muted">Recent transfer & withdrawal expenditures</p>
+          </div>
+          <CustomerSpendingChart data={spendingChartData} />
+        </div>
+
+        <div className="rounded-2xl border border-line bg-card p-6 shadow-xs">
+          <div className="mb-4">
+            <h2 className="text-lg font-bold text-primary">Transaction Distribution</h2>
+            <p className="text-xs text-muted">Breakdown of your ledger activities</p>
+          </div>
+          <CustomerTxnDistChart data={txnDistData} />
         </div>
       </div>
 
