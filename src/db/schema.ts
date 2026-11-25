@@ -1,4 +1,13 @@
-import { boolean, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import {
+  boolean,
+  check,
+  numeric,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+} from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -51,3 +60,32 @@ export const verification = pgTable("verification", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
+
+// ---------- Banking tables ----------
+
+export const bankAccounts = pgTable(
+  "bank_accounts",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
+    accountNumber: text("account_number").notNull().unique(),
+    // "savings" | "current" | "business"
+    type: text("type").notNull(),
+    balance: numeric("balance", { precision: 14, scale: 2 })
+      .notNull()
+      .default("0.00"),
+    // "active" | "frozen"
+    status: text("status").notNull().default("active"),
+    dailyLimit: numeric("daily_limit", { precision: 14, scale: 2 })
+      .notNull()
+      .default("50000.00"),
+    singleLimit: numeric("single_limit", { precision: 14, scale: 2 })
+      .notNull()
+      .default("10000.00"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [check("balance_not_negative", sql`${table.balance} >= 0`)],
+);
