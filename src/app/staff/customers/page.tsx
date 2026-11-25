@@ -4,6 +4,7 @@ import { customerProfiles, user } from "@/db/schema";
 import { requireRole } from "@/lib/session";
 import { formatDate } from "@/lib/format";
 import StatusBadge from "@/components/StatusBadge";
+import KycVerificationAction from "@/components/dashboard/KycVerificationAction";
 
 export default async function StaffCustomersPage() {
   await requireRole(["staff"]);
@@ -32,25 +33,26 @@ export default async function StaffCustomersPage() {
           Customer Verification & Directory
         </h1>
         <p className="text-sm text-muted">
-          Verify customer credentials, KYC verification statuses, and contact details.
+          Verify customer identities (KYC), update status, and review registration records.
         </p>
       </div>
 
       <div className="overflow-x-auto rounded-2xl border border-line bg-card shadow-xs">
-        <table className="w-full min-w-[700px] text-left text-sm">
+        <table className="w-full min-w-[750px] text-left text-sm">
           <thead className="border-b border-line bg-page text-xs font-semibold uppercase text-muted">
             <tr>
               <th className="px-5 py-3.5">Customer Name</th>
               <th className="px-5 py-3.5">Email</th>
               <th className="px-5 py-3.5">Account Status</th>
               <th className="px-5 py-3.5">KYC Status</th>
-              <th className="px-5 py-3.5">Registration Date</th>
+              <th className="px-5 py-3.5">Verify Action</th>
+              <th className="px-5 py-3.5">Registered</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
             {customers.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-5 py-8 text-center text-sm text-muted">
+                <td colSpan={6} className="px-5 py-8 text-center text-sm text-muted">
                   No registered customers found.
                 </td>
               </tr>
@@ -66,6 +68,12 @@ export default async function StaffCustomersPage() {
                   </td>
                   <td className="px-5 py-4">
                     <StatusBadge status={c.verificationStatus || "pending"} />
+                  </td>
+                  <td className="px-5 py-4">
+                    <KycVerificationAction
+                      userId={c.id}
+                      currentStatus={c.verificationStatus || "pending"}
+                    />
                   </td>
                   <td className="px-5 py-4 text-xs text-muted">
                     {formatDate(c.createdAt)}

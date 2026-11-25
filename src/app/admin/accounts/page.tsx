@@ -4,6 +4,7 @@ import { bankAccounts, user } from "@/db/schema";
 import { requireRole } from "@/lib/session";
 import { formatDate, money } from "@/lib/format";
 import StatusBadge from "@/components/StatusBadge";
+import AccountFreezeAction from "@/components/dashboard/AccountFreezeAction";
 
 export default async function AdminAccountsPage() {
   await requireRole(["admin"]);
@@ -29,15 +30,15 @@ export default async function AdminAccountsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="font-heading text-3xl font-bold text-primary">
-          Bank Accounts
+          Bank Accounts Management
         </h1>
         <p className="text-sm text-muted">
-          All customer accounts, liquid balances, limits, and active status.
+          Inspect customer balances, daily transaction thresholds, and freeze/unfreeze accounts.
         </p>
       </div>
 
       <div className="overflow-x-auto rounded-2xl border border-line bg-card shadow-xs">
-        <table className="w-full min-w-[750px] text-left text-sm">
+        <table className="w-full min-w-[800px] text-left text-sm">
           <thead className="border-b border-line bg-page text-xs font-semibold uppercase text-muted">
             <tr>
               <th className="px-5 py-3.5">Account Number</th>
@@ -46,7 +47,7 @@ export default async function AdminAccountsPage() {
               <th className="px-5 py-3.5">Balance</th>
               <th className="px-5 py-3.5">Daily Limit</th>
               <th className="px-5 py-3.5">Status</th>
-              <th className="px-5 py-3.5">Created</th>
+              <th className="px-5 py-3.5">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
@@ -76,8 +77,11 @@ export default async function AdminAccountsPage() {
                   <td className="px-5 py-4">
                     <StatusBadge status={a.status} />
                   </td>
-                  <td className="px-5 py-4 text-xs text-muted">
-                    {formatDate(a.createdAt)}
+                  <td className="px-5 py-4">
+                    <AccountFreezeAction
+                      accountId={a.id}
+                      currentStatus={a.status}
+                    />
                   </td>
                 </tr>
               ))
