@@ -1,13 +1,31 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { loans } from "@/db/schema";
+import { bankAccounts, loans } from "@/db/schema";
 import { requireRole } from "@/lib/session";
 import { formatDate, money } from "@/lib/format";
 import StatusBadge from "@/components/StatusBadge";
+import LoanApplicationForm from "@/features/loans/LoanApplicationForm";
 
 export default async function CustomerLoansPage() {
   const session = await requireRole(["customer"]);
 
+  // 1. Fetch customer's active bank accounts to receive funds
+  const accounts = await db
+    .select({
+      accountNumber: bankAccounts.accountNumber,
+      type: bankAccounts.type,
+      balance: bankAccounts.balance,
+    })
+    .from(bankAccounts)
+    .where(
+      and(
+        eq(bankAccounts.userId, session.user.id),
+        eq(bankAccounts.status, "active")
+      )
+    )
+    .orderBy(bankAccounts.accountNumber);
+
+  // 2. Fetch customer's loan applications
   const userLoans = await db
     .select()
     .from(loans)
@@ -15,66 +33,85 @@ export default async function CustomerLoansPage() {
     .orderBy(desc(loans.createdAt));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 max-w-4xl">
       <div>
         <h1 className="font-heading text-3xl font-bold text-primary">
-          Loan Applications
+          Loan Services
         </h1>
         <p className="text-sm text-muted">
-          View your submitted loan applications, approval status, and schedules.
+          Apply for personal, business, or education financing and track your approval status.
         </p>
       </div>
 
-      {userLoans.length === 0 ? (
-        <div className="rounded-2xl border border-line bg-card p-12 text-center shadow-xs">
-          <p className="text-base font-semibold text-primary">No active loans found</p>
-          <p className="mt-1 text-sm text-muted">
-            You currently have no submitted or active loan applications with Aurum Bank.
-          </p>
-        </div>
-      ) : (
-        <div className="grid gap-6 sm:grid-cols-2">
-          {userLoans.map((l) => (
-            <div
-              key={l.id}
-              className="rounded-2xl border border-line bg-card p-6 shadow-xs space-y-4"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs uppercase font-bold text-muted capitalize">
-                  {l.type} Loan
-                </span>
-                <StatusBadge status={l.status} />
-              </div>
+      {/* Application Form */}
+      <div className="rounded-2xl border border-line bg-card p-6 shadow-xs sm:p-8 max-w-2xl">
+        <h2 className="text-lg font-bold text-primary mb-4">
+          Apply for a New Loan
+        </h2>
+        <LoanApplicationForm accounts={accounts} />
+      </div>
 
-              <div>
-                <span className="text-xs text-muted">Requested Amount</span>
-                <p className="text-3xl font-bold text-primary">
-                  ${money(l.amount)}
-                </p>
-              </div>
+      {/* Existing Loan Applications */}
+      <div className="space-y-4">
+        <h2 className="text-lg font-bold text-primary">
+          My Loan Applications & Active Loans
+        </h2>
+        {userLoans.length === 0 ? (
+          <div className="rounded-2xl border border-line bg-card p-8 text-center text-sm text-muted">
+            You have no active loans or applications on record.
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {userLoans.map((l) => (
+              <div
+                key={l.id}
+                className="rounded-2xl border border-line bg-card p-6 shadow-xs space-y-3"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs uppercase font-bold text-muted capitalize">
+                    {l.type} Loan
+                  </span>
+                  <StatusBadge status={l.status} />
+                </div>
 
-              <div className="grid grid-cols-2 gap-3 pt-3 border-t border-line text-xs">
                 <div>
-                  <span className="text-muted block">Duration</span>
-                  <span className="font-medium text-primary">{l.durationMonths} Months</span>
+                  <span className="text-xs text-muted">Amount</span>
+                  <p className="text-3xl font-bold text-primary">
+                    ${money(l.amount)}
+                  </p>
                 </div>
-                <div>
-                  <span className="text-muted block">Monthly Income</span>
-                  <span className="font-medium text-primary">${money(l.monthlyIncome)}</span>
-                </div>
-                <div>
-                  <span className="text-muted block">Remaining Balance</span>
-                  <span className="font-medium text-primary">${money(l.remainingBalance || "0.00")}</span>
-                </div>
-                <div>
-                  <span className="text-muted block">Application Date</span>
-                  <span className="font-medium text-primary">{formatDate(l.createdAt)}</span>
+
+                <div className="grid grid-cols-2 gap-2 pt-3 border-t border-line text-xs">
+                  <div>
+                    <span className="text-muted block">Duration</span>
+                    <span className="font-semibold text-primary">
+                      {l.durationMonths} Months
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-muted block">Monthly Income</span>
+                    <span className="font-semibold text-primary">
+                      ${money(l.monthlyIncome)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-muted block">Remaining Balance</span>
+                    <span className="font-semibold text-primary">
+                      ${money(l.remainingBalance || "0.00")}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-muted block">Submitted</span>
+                    <span className="font-semibold text-primary">
+                      {formatDate(l.createdAt)}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { bankAccounts, loans, user } from "@/db/schema";
 import { requireRole } from "@/lib/session";
 import { formatDate, money } from "@/lib/format";
 import StatusBadge from "@/components/StatusBadge";
+import AdminLoanReviewButtons from "@/features/loans/AdminLoanReviewButtons";
 
 export default async function AdminLoansPage() {
   await requireRole(["admin"]);
@@ -34,12 +35,12 @@ export default async function AdminLoansPage() {
           Loan Management
         </h1>
         <p className="text-sm text-muted">
-          Review, approve, or reject customer loan applications and disbursements.
+          Review, approve (with instant fund disbursement), or reject loan applications.
         </p>
       </div>
 
       <div className="overflow-x-auto rounded-2xl border border-line bg-card shadow-xs">
-        <table className="w-full min-w-[750px] text-left text-sm">
+        <table className="w-full min-w-[850px] text-left text-sm">
           <thead className="border-b border-line bg-page text-xs font-semibold uppercase text-muted">
             <tr>
               <th className="px-5 py-3.5">Applicant</th>
@@ -48,7 +49,7 @@ export default async function AdminLoansPage() {
               <th className="px-5 py-3.5">Duration</th>
               <th className="px-5 py-3.5">Monthly Income</th>
               <th className="px-5 py-3.5">Status</th>
-              <th className="px-5 py-3.5">Applied Date</th>
+              <th className="px-5 py-3.5">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
@@ -70,7 +71,7 @@ export default async function AdminLoansPage() {
                     ${money(l.amount)}
                   </td>
                   <td className="px-5 py-4 text-xs text-muted">
-                    {l.durationMonths} Months
+                    {l.durationMonths} Mo
                   </td>
                   <td className="px-5 py-4 text-xs text-muted">
                     ${money(l.monthlyIncome)}
@@ -78,8 +79,12 @@ export default async function AdminLoansPage() {
                   <td className="px-5 py-4">
                     <StatusBadge status={l.status} />
                   </td>
-                  <td className="px-5 py-4 text-xs text-muted">
-                    {formatDate(l.createdAt)}
+                  <td className="px-5 py-4">
+                    {l.status === "pending" || l.status === "under_review" ? (
+                      <AdminLoanReviewButtons loanId={l.id} />
+                    ) : (
+                      <span className="text-xs text-muted">Decided</span>
+                    )}
                   </td>
                 </tr>
               ))
