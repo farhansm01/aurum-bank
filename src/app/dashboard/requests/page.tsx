@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { bankAccounts, moneyRequests } from "@/db/schema";
@@ -44,57 +43,68 @@ export default async function RequestsPage() {
     .limit(20);
 
   return (
-    <main className="mx-auto max-w-3xl p-4 sm:p-6">
-      <Link href="/dashboard" className="text-sm text-gold hover:underline">
-        Back to dashboard
-      </Link>
-      <h1 className="mt-3 font-heading text-3xl font-bold text-primary">
-        Deposit and withdrawal
-      </h1>
-      <p className="mt-1 text-sm text-muted">
-        Send a request. Our staff reviews it and approves or rejects it.
-      </p>
+    <div className="space-y-8 max-w-4xl">
+      <div>
+        <h1 className="font-heading text-3xl font-bold text-primary">
+          Deposit & Withdrawal Requests
+        </h1>
+        <p className="text-sm text-muted">
+          Submit deposit or withdrawal requests for bank staff review and processing.
+        </p>
+      </div>
 
-      <div className="mt-6 rounded-3xl border border-line bg-white p-5 shadow-sm sm:p-8">
+      {/* Submission Form */}
+      <div className="rounded-2xl border border-line bg-card p-6 shadow-xs sm:p-8 max-w-2xl">
+        <h2 className="text-lg font-bold text-primary mb-4">New Request</h2>
         <RequestForm accounts={accounts} />
       </div>
 
-      <h2 className="mt-10 text-lg font-semibold text-primary">My requests</h2>
-      <div className="mt-3 overflow-x-auto rounded-2xl border border-line bg-white">
-        <table className="w-full min-w-[520px] text-left text-sm">
-          <thead className="border-b border-line text-xs uppercase text-muted">
-            <tr>
-              <th className="px-4 py-3">Date</th>
-              <th className="px-4 py-3">Type</th>
-              <th className="px-4 py-3">Account</th>
-              <th className="px-4 py-3">Amount</th>
-              <th className="px-4 py-3">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {requests.length === 0 && (
+      {/* History Table */}
+      <div className="space-y-4">
+        <h2 className="text-lg font-bold text-primary">My Request History</h2>
+        <div className="overflow-x-auto rounded-2xl border border-line bg-card shadow-xs">
+          <table className="w-full min-w-[550px] text-left text-sm">
+            <thead className="border-b border-line bg-page text-xs font-semibold uppercase text-muted">
               <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-muted">
-                  No requests yet.
-                </td>
+                <th className="px-5 py-3.5">Date</th>
+                <th className="px-5 py-3.5">Type</th>
+                <th className="px-5 py-3.5">Account</th>
+                <th className="px-5 py-3.5">Amount</th>
+                <th className="px-5 py-3.5">Status</th>
               </tr>
-            )}
-            {requests.map((r) => (
-              <tr key={r.id} className="border-b border-line last:border-0">
-                <td className="px-4 py-3 text-muted">
-                  {formatDate(r.createdAt)}
-                </td>
-                <td className="px-4 py-3 capitalize">{r.type}</td>
-                <td className="px-4 py-3">{r.accountNumber}</td>
-                <td className="px-4 py-3 font-medium">${money(r.amount)}</td>
-                <td className="px-4 py-3">
-                  <StatusBadge status={r.status} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {requests.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-5 py-8 text-center text-sm text-muted">
+                    No requests submitted yet.
+                  </td>
+                </tr>
+              ) : (
+                requests.map((r) => (
+                  <tr key={r.id} className="hover:bg-page/50">
+                    <td className="px-5 py-4 text-xs text-muted">
+                      {formatDate(r.createdAt)}
+                    </td>
+                    <td className="px-5 py-4 capitalize font-medium text-primary">
+                      {r.type}
+                    </td>
+                    <td className="px-5 py-4 font-mono text-xs text-muted">
+                      {r.accountNumber}
+                    </td>
+                    <td className="px-5 py-4 font-bold text-primary">
+                      ${money(r.amount)}
+                    </td>
+                    <td className="px-5 py-4">
+                      <StatusBadge status={r.status} />
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </main>
+    </div>
   );
 }
