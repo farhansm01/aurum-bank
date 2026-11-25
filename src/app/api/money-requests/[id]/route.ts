@@ -1,13 +1,18 @@
 import { requireApiRole } from "@/lib/session";
 import {
   RequestError,
-  createMoneyRequest,
+  reviewMoneyRequest,
 } from "@/features/money-requests/money-requests.service";
 
-export async function POST(request: Request) {
-  // 1. Only a logged-in customer can send a request
-  const check = await requireApiRole(["customer"]);
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  // 1. Only staff or admin can review
+  const check = await requireApiRole(["staff", "admin"]);
   if (check.error) return check.error;
+
+  const { id } = await params;
 
   // 2. Read the request
   let body;
@@ -19,21 +24,17 @@ export async function POST(request: Request) {
 
   // 3. Call the service
   try {
-    const created = await createMoneyRequest({
-      userId: check.session.user.id, // from the session, never from the request
-      accountNumber: String(body.accountNumber ?? ""),
-      type: String(body.type ?? ""),
-      amount: String(body.amount ?? ""),
-      description: body.description ? String(body.description) : undefined,
+    const result = await reviewMoneyRequest({
+      reviewerId: check.session.user.id, // from the session, never from the request
+      requestId: id,
+      action: String(body.action ?? ""),
     });
 
     return Response.json({
       request: {
-        id: created.id,
-        type: created.type,
-        amount: created.amount,
-        status: created.status,
-        createdAt: created.createdAt,
+        id: result.id,
+        status: result.status,
+        reviewedAt: result.reviewedAt,
       },
     });
   } catch (error) {

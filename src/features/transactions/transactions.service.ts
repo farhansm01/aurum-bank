@@ -17,11 +17,11 @@ const MAX_PIN_ATTEMPTS = 5;
 const PIN_LOCK_MINUTES = 15;
 
 // "5000.00" -> 500000 (whole cents, safe to compare)
-function toCents(value: string) {
+export function toCents(value: string) {
   return Math.round(Number(value) * 100);
 }
 
-function makeTxnRef() {
+export function makeTxnRef() {
   const day = new Date().toISOString().slice(0, 10).replaceAll("-", "");
   return `TXN-${day}-${randomInt(100000, 1000000)}`;
 }

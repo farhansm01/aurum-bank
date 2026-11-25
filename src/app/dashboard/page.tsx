@@ -3,6 +3,8 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { bankAccounts } from "@/db/schema";
 import { requireRole } from "@/lib/session";
+import { money } from "@/lib/format";
+import StatusBadge from "@/components/StatusBadge";
 import SignOutButton from "@/components/SignOutButton";
 
 export default async function CustomerDashboard() {
@@ -29,26 +31,33 @@ export default async function CustomerDashboard() {
             key={a.id}
             className="rounded-2xl border border-line bg-white p-5"
           >
-            <p className="text-sm text-muted">
+            <p className="text-sm capitalize text-muted">
               {a.type} account - {a.accountNumber}
             </p>
             <p className="mt-2 text-2xl font-bold text-primary">
-              $
-              {Number(a.balance).toLocaleString("en-US", {
-                minimumFractionDigits: 2,
-              })}
+              ${money(a.balance)}
             </p>
-            <p className="mt-1 text-xs text-muted">Status: {a.status}</p>
+            <div className="mt-2">
+              <StatusBadge status={a.status} />
+            </div>
           </div>
         ))}
       </div>
 
-      <Link
-        href="/dashboard/transfer"
-        className="mt-6 inline-block rounded-full bg-primary px-6 py-3 text-sm font-medium text-white transition hover:bg-primary/90"
-      >
-        Send money
-      </Link>
+      <div className="mt-6 flex flex-wrap gap-3">
+        <Link
+          href="/dashboard/transfer"
+          className="rounded-full bg-primary px-6 py-3 text-sm font-medium text-white transition hover:bg-primary/90"
+        >
+          Send money
+        </Link>
+        <Link
+          href="/dashboard/requests"
+          className="rounded-full border border-line bg-white px-6 py-3 text-sm font-medium text-primary transition hover:border-gold"
+        >
+          Deposit and withdrawal
+        </Link>
+      </div>
     </main>
   );
 }
