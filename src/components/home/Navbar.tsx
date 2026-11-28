@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LayoutDashboard } from "lucide-react";
 import Logo from "@/components/Logo";
+import { authClient } from "@/lib/auth-client";
 
 const links = [
   { label: "Features", href: "#features" },
@@ -15,6 +16,14 @@ const links = [
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
+  const { data: session } = authClient.useSession();
+
+  const dashboardHref =
+    session?.user && "role" in session.user && session.user.role === "admin"
+      ? "/admin"
+      : session?.user && "role" in session.user && session.user.role === "staff"
+        ? "/staff"
+        : "/dashboard";
 
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-white/80 backdrop-blur">
@@ -37,18 +46,30 @@ export default function Navbar() {
         </ul>
 
         <div className="hidden items-center gap-3 md:flex">
-          <Link
-            href="/login"
-            className="rounded-full px-4 py-2 text-sm font-medium text-primary transition hover:bg-gold-soft"
-          >
-            Login
-          </Link>
-          <Link
-            href="/register"
-            className="rounded-full bg-primary px-5 py-2 text-sm font-medium text-white transition hover:bg-primary/90"
-          >
-            Open account
-          </Link>
+          {session?.user ? (
+            <Link
+              href={dashboardHref}
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-medium text-white transition hover:bg-primary/90"
+            >
+              <LayoutDashboard size={16} />
+              <span>Dashboard</span>
+            </Link>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="rounded-full px-4 py-2 text-sm font-medium text-primary transition hover:bg-gold-soft"
+              >
+                Login
+              </Link>
+              <Link
+                href="/register"
+                className="rounded-full bg-primary px-5 py-2 text-sm font-medium text-white transition hover:bg-primary/90"
+              >
+                Open account
+              </Link>
+            </>
+          )}
         </div>
 
         <button
@@ -77,18 +98,30 @@ export default function Navbar() {
             ))}
           </ul>
           <div className="flex gap-3">
-            <Link
-              href="/login"
-              className="flex-1 rounded-full border border-line py-2 text-center text-sm font-medium text-primary"
-            >
-              Login
-            </Link>
-            <Link
-              href="/register"
-              className="flex-1 rounded-full bg-primary py-2 text-center text-sm font-medium text-white"
-            >
-              Open account
-            </Link>
+            {session?.user ? (
+              <Link
+                href={dashboardHref}
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-primary py-2 text-center text-sm font-medium text-white"
+              >
+                <LayoutDashboard size={16} />
+                <span>Dashboard</span>
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="flex-1 rounded-full border border-line py-2 text-center text-sm font-medium text-primary"
+                >
+                  Login
+                </Link>
+                <Link
+                  href="/register"
+                  className="flex-1 rounded-full bg-primary py-2 text-center text-sm font-medium text-white"
+                >
+                  Open account
+                </Link>
+              </>
+            )}
           </div>
         </div>
       )}
