@@ -12,7 +12,7 @@ export async function GET(request: Request) {
   try {
     // 1. Find all accounts belonging to this customer
     const userAccounts = await db
-      .select({ id: bankAccounts.id })
+      .select({ id: bankAccounts.id, accountNumber: bankAccounts.accountNumber })
       .from(bankAccounts)
       .where(eq(bankAccounts.userId, check.session.user.id));
 
@@ -22,14 +22,27 @@ export async function GET(request: Request) {
       return Response.json({ transactions: [] });
     }
 
-    // 2. Optional: check if query param ?accountId is provided and valid
+    // 2. Check query params: ?accountNumber= or ?accountId=
     const { searchParams } = new URL(request.url);
+    const filterAccountNumber = searchParams.get("accountNumber");
     const filterAccountId = searchParams.get("accountId");
 
-    const targetIds =
-      filterAccountId && accountIds.includes(filterAccountId)
-        ? [filterAccountId]
-        : accountIds;
+    let targetIds = accountIds;
+
+    if (filterAccountNumber) {
+      const match = userAccounts.find(
+        (a) => a.accountNumber.toLowerCase() === filterAccountNumber.toLowerCase(),
+      );
+      if (!match) {
+        return Response.json({ error: "Account not found." }, { status: 404 });
+      }
+      targetIds = [match.id];
+    } else if (filterAccountId) {
+      if (!accountIds.includes(filterAccountId)) {
+        return Response.json({ error: "Account not found." }, { status: 404 });
+      }
+      targetIds = [filterAccountId];
+    }
 
     // 3. Select transactions where sender or receiver is one of customer's accounts
     const rows = await db

@@ -11,12 +11,14 @@ export type BankAccount = {
 
 type AccountsState = {
   accounts: BankAccount[];
+  selectedAccountNumber: string | null;
   loading: boolean;
   error: string | null;
 };
 
 const initialState: AccountsState = {
   accounts: [],
+  selectedAccountNumber: null,
   loading: false,
   error: null,
 };
@@ -40,9 +42,13 @@ const accountsSlice = createSlice({
   name: "accounts",
   initialState,
   reducers: {
+    setSelectedAccount(state, action: PayloadAction<string | null>) {
+      state.selectedAccountNumber = action.payload;
+    },
     // Call this to wipe the list (e.g. on logout)
     clearAccounts(state) {
       state.accounts = [];
+      state.selectedAccountNumber = null;
       state.error = null;
     },
   },
@@ -63,5 +69,5 @@ const accountsSlice = createSlice({
   },
 });
 
-export const { clearAccounts } = accountsSlice.actions;
+export const { setSelectedAccount, clearAccounts } = accountsSlice.actions;
 export default accountsSlice.reducer;

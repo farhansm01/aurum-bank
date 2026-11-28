@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useAppSelector } from "@/store/hooks";
 import { money } from "@/lib/format";
 
 type Account = {
@@ -15,9 +16,19 @@ const inputClass =
 
 export default function RequestForm({ accounts }: { accounts: Account[] }) {
   const router = useRouter();
-  const [accountNumber, setAccountNumber] = useState(
-    accounts[0]?.accountNumber ?? "",
+  const selectedAccountNumber = useAppSelector(
+    (state) => state.accounts.selectedAccountNumber,
   );
+
+  const defaultAccount =
+    selectedAccountNumber &&
+    accounts.some((a) => a.accountNumber === selectedAccountNumber)
+      ? selectedAccountNumber
+      : (accounts[0]?.accountNumber ?? "");
+
+  const [accountOverride, setAccountOverride] = useState<string | null>(null);
+  const accountNumber = accountOverride ?? defaultAccount;
+
   const [type, setType] = useState("deposit");
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
@@ -76,7 +87,7 @@ export default function RequestForm({ accounts }: { accounts: Account[] }) {
           <label className="text-sm font-medium text-primary">Account</label>
           <select
             value={accountNumber}
-            onChange={(e) => setAccountNumber(e.target.value)}
+            onChange={(e) => setAccountOverride(e.target.value)}
             className={inputClass}
           >
             {accounts.map((a) => (

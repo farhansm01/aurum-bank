@@ -27,13 +27,14 @@ const initialState: TransactionsState = {
   error: null,
 };
 
-// Fetches transactions. Pass an accountId to filter by account.
+// Fetches transactions. Pass an accountNumber or accountId to filter by account.
 export const fetchTransactions = createAsyncThunk(
   "transactions/fetchTransactions",
-  async (accountId: string | undefined, thunkAPI) => {
-    const url = accountId
-      ? `/api/transactions?accountId=${accountId}`
-      : "/api/transactions";
+  async (accountIdentifier: string | null | undefined, thunkAPI) => {
+    let url = "/api/transactions";
+    if (accountIdentifier) {
+      url = `/api/transactions?accountNumber=${encodeURIComponent(accountIdentifier)}`;
+    }
 
     const res = await fetch(url);
     const data = await res.json();

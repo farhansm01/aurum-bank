@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useAppSelector } from "@/store/hooks";
 
 type Account = {
   accountNumber: string;
@@ -21,7 +22,19 @@ function money(value: string) {
 
 export default function TransferForm({ accounts }: { accounts: Account[] }) {
   const router = useRouter();
-  const [from, setFrom] = useState(accounts[0]?.accountNumber ?? "");
+  const selectedAccountNumber = useAppSelector(
+    (state) => state.accounts.selectedAccountNumber,
+  );
+
+  const defaultFrom =
+    selectedAccountNumber &&
+    accounts.some((a) => a.accountNumber === selectedAccountNumber)
+      ? selectedAccountNumber
+      : (accounts[0]?.accountNumber ?? "");
+
+  const [fromOverride, setFromOverride] = useState<string | null>(null);
+  const from = fromOverride ?? defaultFrom;
+
   const [to, setTo] = useState("");
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
@@ -81,7 +94,7 @@ export default function TransferForm({ accounts }: { accounts: Account[] }) {
         <label className="text-sm font-medium text-primary">From account</label>
         <select
           value={from}
-          onChange={(e) => setFrom(e.target.value)}
+          onChange={(e) => setFromOverride(e.target.value)}
           className={inputClass}
         >
           {accounts.map((a) => (

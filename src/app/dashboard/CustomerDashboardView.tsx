@@ -3,46 +3,94 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { fetchAccounts } from "@/features/accounts/accountsSlice";
+import { fetchAccounts, setSelectedAccount } from "@/features/accounts/accountsSlice";
 import { fetchTransactions } from "@/features/transactions/transactionsSlice";
 import { fetchLoans } from "@/features/loans/loansSlice";
 import { money } from "@/lib/format";
 import StatusBadge from "@/components/StatusBadge";
 import { CustomerSpendingChart, CustomerTxnDistChart } from "@/components/dashboard/CustomerCharts";
-import { ArrowUpRight, ArrowDownLeft, ArrowLeftRight, Wallet } from "lucide-react";
+import { ArrowUpRight, ArrowDownLeft, ArrowLeftRight, Wallet, CheckCircle2 } from "lucide-react";
 
 export default function CustomerOverviewPage({ userName }: { userName: string }) {
   const dispatch = useAppDispatch();
 
-  const { accounts, loading: accountsLoading } = useAppSelector((state) => state.accounts);
+  const { accounts, selectedAccountNumber, loading: accountsLoading } = useAppSelector(
+    (state) => state.accounts,
+  );
   const { transactions, loading: txnsLoading } = useAppSelector((state) => state.transactions);
   const { loans } = useAppSelector((state) => state.loans);
 
   useEffect(() => {
     dispatch(fetchAccounts());
-    dispatch(fetchTransactions(undefined));
     dispatch(fetchLoans());
   }, [dispatch]);
 
-  const totalBalance = accounts.reduce((sum, a) => sum + Number(a.balance || 0), 0);
+  useEffect(() => {
+    dispatch(fetchTransactions(selectedAccountNumber));
+  }, [dispatch, selectedAccountNumber]);
 
-  const totalDeposits = transactions
-    .filter((t) => t.type === "deposit" && t.status === "completed")
-    .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+  const selectedAccount = selectedAccountNumber
+    ? accounts.find((a) => a.accountNumber === selectedAccountNumber)
+    : null;
 
-  const totalWithdrawals = transactions
-    .filter((t) => t.type === "withdrawal" && t.status === "completed")
-    .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+  const totalBalance = selectedAccount
+    ? Number(selectedAccount.balance || 0)
+    : accounts.reduce((sum, a) => sum + Number(a.balance || 0), 0);
+
+  const totalDeposits = selectedAccount
+    ? transactions
+        .filter(
+          (t) =>
+            t.type === "deposit" &&
+            t.status === "completed" &&
+            t.receiverAccountId === selectedAccount.id,
+        )
+        .reduce((sum, t) => sum + Number(t.amount || 0), 0)
+    : transactions
+        .filter((t) => t.type === "deposit" && t.status === "completed")
+        .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+
+  const totalWithdrawals = selectedAccount
+    ? transactions
+        .filter(
+          (t) =>
+            t.type === "withdrawal" &&
+            t.status === "completed" &&
+            t.senderAccountId === selectedAccount.id,
+        )
+        .reduce((sum, t) => sum + Number(t.amount || 0), 0)
+    : transactions
+        .filter((t) => t.type === "withdrawal" && t.status === "completed")
+        .reduce((sum, t) => sum + Number(t.amount || 0), 0);
 
   const activeLoans = loans.filter((l) => l.status === "active" || l.status === "approved");
   const totalRemainingLoanBalance = activeLoans.reduce(
     (sum, l) => sum + Number(l.remainingBalance || 0),
-    0
+    0,
   );
 
   // Chart data: customer spending history
+  // Money moved between customer's own accounts is not spending when All accounts is selected.
+  // When one account is selected, it is an outflow for that account.
+  const myAccountIds = new Set(accounts.map((a) => a.id));
+
   const spendingChartData = transactions
-    .filter((t) => (t.type === "withdrawal" || t.type === "transfer") && t.status === "completed")
+    .filter((t) => {
+      if (t.status !== "completed") return false;
+
+      if (selectedAccount) {
+        if (t.senderAccountId !== selectedAccount.id) return false;
+        return t.type === "withdrawal" || t.type === "transfer" || t.type === "loan_repayment";
+      } else {
+        if (t.type === "withdrawal" || t.type === "loan_repayment") return true;
+        if (t.type === "transfer") {
+          const isFromMe = t.senderAccountId ? myAccountIds.has(t.senderAccountId) : false;
+          const isToMe = t.receiverAccountId ? myAccountIds.has(t.receiverAccountId) : false;
+          return isFromMe && !isToMe;
+        }
+        return false;
+      }
+    })
     .slice(0, 7)
     .map((t) => ({
       date: new Date(t.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
@@ -94,12 +142,46 @@ export default function CustomerOverviewPage({ userName }: { userName: string })
         </div>
       </div>
 
+      {/* Account Switcher: hidden if customer has 1 or 0 accounts */}
+      {accounts.length > 1 && (
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted shrink-0 mr-1">
+            Account:
+          </span>
+          <button
+            type="button"
+            onClick={() => dispatch(setSelectedAccount(null))}
+            className={`rounded-full px-4 py-1.5 text-xs font-medium transition shrink-0 ${
+              selectedAccountNumber === null
+                ? "bg-primary text-white shadow-xs"
+                : "border border-line bg-card text-muted hover:border-gold hover:text-primary"
+            }`}
+          >
+            All accounts
+          </button>
+          {accounts.map((a) => (
+            <button
+              key={a.accountNumber}
+              type="button"
+              onClick={() => dispatch(setSelectedAccount(a.accountNumber))}
+              className={`rounded-full px-4 py-1.5 text-xs font-medium font-mono transition shrink-0 ${
+                selectedAccountNumber === a.accountNumber
+                  ? "bg-primary text-white shadow-xs"
+                  : "border border-line bg-card text-muted hover:border-gold hover:text-primary"
+              }`}
+            >
+              {a.accountNumber}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Summary KPI Cards */}
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-2xl border border-line bg-card p-5 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-muted">
-              Total Balance
+              {selectedAccount ? `${selectedAccount.accountNumber} Balance` : "Total Balance"}
             </span>
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gold-soft text-gold">
               <Wallet size={16} />
@@ -109,7 +191,9 @@ export default function CustomerOverviewPage({ userName }: { userName: string })
             ${money(totalBalance.toFixed(2))}
           </p>
           <p className="mt-1 text-xs text-muted">
-            Across {accounts.length} active account{accounts.length === 1 ? "" : "s"}
+            {selectedAccount
+              ? `${selectedAccount.type.toUpperCase()} account (${selectedAccount.status})`
+              : `Across ${accounts.length} active account${accounts.length === 1 ? "" : "s"}`}
           </p>
         </div>
 
@@ -125,7 +209,11 @@ export default function CustomerOverviewPage({ userName }: { userName: string })
           <p className="mt-3 text-3xl font-bold text-green-700">
             +${money(totalDeposits.toFixed(2))}
           </p>
-          <p className="mt-1 text-xs text-muted">Completed deposit transactions</p>
+          <p className="mt-1 text-xs text-muted">
+            {selectedAccount
+              ? `Deposits to ${selectedAccount.accountNumber}`
+              : "Completed deposit transactions"}
+          </p>
         </div>
 
         <div className="rounded-2xl border border-line bg-card p-5 shadow-xs">
@@ -140,7 +228,11 @@ export default function CustomerOverviewPage({ userName }: { userName: string })
           <p className="mt-3 text-3xl font-bold text-amber-700">
             -${money(totalWithdrawals.toFixed(2))}
           </p>
-          <p className="mt-1 text-xs text-muted">Completed withdrawal transactions</p>
+          <p className="mt-1 text-xs text-muted">
+            {selectedAccount
+              ? `Withdrawals from ${selectedAccount.accountNumber}`
+              : "Completed withdrawal transactions"}
+          </p>
         </div>
       </div>
 
@@ -149,17 +241,37 @@ export default function CustomerOverviewPage({ userName }: { userName: string })
         <div className="rounded-2xl border border-line bg-card p-6 shadow-xs">
           <div className="mb-4">
             <h2 className="text-lg font-bold text-primary">Outflow & Spending Trend</h2>
-            <p className="text-xs text-muted">Recent transfer & withdrawal expenditures</p>
+            <p className="text-xs text-muted">
+              {selectedAccount
+                ? `Outflows and debit expenditures for ${selectedAccount.accountNumber}`
+                : "Recent transfer and withdrawal expenditures"}
+            </p>
           </div>
-          <CustomerSpendingChart data={spendingChartData} />
+          {txnsLoading ? (
+            <div className="flex h-60 items-center justify-center text-sm text-muted animate-pulse">
+              Loading trends...
+            </div>
+          ) : (
+            <CustomerSpendingChart data={spendingChartData} />
+          )}
         </div>
 
         <div className="rounded-2xl border border-line bg-card p-6 shadow-xs">
           <div className="mb-4">
             <h2 className="text-lg font-bold text-primary">Transaction Distribution</h2>
-            <p className="text-xs text-muted">Breakdown of your ledger activities</p>
+            <p className="text-xs text-muted">
+              {selectedAccount
+                ? `Breakdown for ${selectedAccount.accountNumber}`
+                : "Breakdown of your ledger activities"}
+            </p>
           </div>
-          <CustomerTxnDistChart data={txnDistData} />
+          {txnsLoading ? (
+            <div className="flex h-60 items-center justify-center text-sm text-muted animate-pulse">
+              Loading distribution...
+            </div>
+          ) : (
+            <CustomerTxnDistChart data={txnDistData} />
+          )}
         </div>
       </div>
 
@@ -181,25 +293,43 @@ export default function CustomerOverviewPage({ userName }: { userName: string })
           <p className="text-sm text-muted">No accounts found.</p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {accounts.map((a) => (
-              <div
-                key={a.id}
-                className="rounded-xl border border-line bg-page p-4 transition hover:border-gold/50"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold uppercase text-muted">
-                    {a.type}
-                  </span>
-                  <StatusBadge status={a.status} />
+            {accounts.map((a) => {
+              const isSelected = selectedAccountNumber === a.accountNumber;
+              return (
+                <div
+                  key={a.id}
+                  onClick={() =>
+                    dispatch(setSelectedAccount(isSelected ? null : a.accountNumber))
+                  }
+                  className={`cursor-pointer rounded-xl border p-4 transition ${
+                    isSelected
+                      ? "border-gold bg-gold-soft/30 ring-2 ring-gold/30 shadow-xs"
+                      : "border-line bg-page hover:border-gold/50"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold uppercase text-muted">
+                      {a.type}
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      {isSelected && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-semibold text-gold">
+                          <CheckCircle2 size={10} />
+                          Active Filter
+                        </span>
+                      )}
+                      <StatusBadge status={a.status} />
+                    </div>
+                  </div>
+                  <p className="mt-2 text-2xl font-bold text-primary">
+                    ${money(a.balance)}
+                  </p>
+                  <p className="mt-1 font-mono text-xs text-muted">
+                    {a.accountNumber}
+                  </p>
                 </div>
-                <p className="mt-2 text-2xl font-bold text-primary">
-                  ${money(a.balance)}
-                </p>
-                <p className="mt-1 font-mono text-xs text-muted">
-                  {a.accountNumber}
-                </p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -217,7 +347,7 @@ export default function CustomerOverviewPage({ userName }: { userName: string })
         </div>
 
         {txnsLoading && transactions.length === 0 ? (
-          <p className="text-sm text-muted">Loading transactions...</p>
+          <p className="text-sm text-muted animate-pulse">Loading transactions...</p>
         ) : transactions.length === 0 ? (
           <p className="text-sm text-muted">No transactions recorded yet.</p>
         ) : (
@@ -292,7 +422,7 @@ export default function CustomerOverviewPage({ userName }: { userName: string })
                   ${money(l.amount)}
                 </p>
                 <p className="mt-1 text-xs text-muted">
-                  Remaining balance: ${money(l.remainingBalance || "0.00")} • Duration: {l.durationMonths}m
+                  Remaining balance: ${money(l.remainingBalance || "0.00")} - Duration: {l.durationMonths}m
                 </p>
               </Link>
             ))}
