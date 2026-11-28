@@ -9,33 +9,32 @@ import StatusBadge from "@/components/StatusBadge";
 import { authClient } from "@/lib/auth-client";
 import { NavItem, navIcons } from "./nav-config";
 
-type DashboardShellProps = {
-  user: {
-    name: string;
-    email: string;
-    role: string;
-  };
-  navItems: NavItem[];
-  children: React.ReactNode;
+type ShellUser = {
+  name: string;
+  email: string;
+  role: string;
 };
 
-export default function DashboardShell({
+type SidebarContentProps = {
+  user: ShellUser;
+  navItems: NavItem[];
+  pathname: string;
+  loggingOut: boolean;
+  onNavigate: () => void;
+  onSignOut: () => void;
+};
+
+// Sidebar content (used for both desktop and mobile drawer).
+// It lives OUTSIDE DashboardShell, so React does not recreate it on every render.
+function SidebarContent({
   user,
   navItems,
-  children,
-}: DashboardShellProps) {
-  const pathname = usePathname();
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [loggingOut, setLoggingOut] = useState(false);
-
-  async function handleSignOut() {
-    setLoggingOut(true);
-    await authClient.signOut();
-    window.location.href = "/login";
-  }
-
-  // Sidebar content component (used for both desktop and mobile drawer)
-  const SidebarContent = () => (
+  pathname,
+  loggingOut,
+  onNavigate,
+  onSignOut,
+}: SidebarContentProps) {
+  return (
     <div className="flex h-full flex-col justify-between p-5">
       <div>
         {/* Logo */}
@@ -75,7 +74,7 @@ export default function DashboardShell({
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={() => setMobileOpen(false)}
+                onClick={onNavigate}
                 className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${
                   isActive
                     ? "bg-primary text-white shadow-xs"
@@ -93,7 +92,7 @@ export default function DashboardShell({
       {/* Sign Out Action at Bottom */}
       <div className="pt-4 border-t border-line">
         <button
-          onClick={handleSignOut}
+          onClick={onSignOut}
           disabled={loggingOut}
           className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-50"
         >
@@ -103,12 +102,46 @@ export default function DashboardShell({
       </div>
     </div>
   );
+}
+
+type DashboardShellProps = {
+  user: ShellUser;
+  navItems: NavItem[];
+  children: React.ReactNode;
+};
+
+export default function DashboardShell({
+  user,
+  navItems,
+  children,
+}: DashboardShellProps) {
+  const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  async function handleSignOut() {
+    setLoggingOut(true);
+    await authClient.signOut();
+    // A full page reload on purpose: it also clears the Redux store,
+    // so the next person who logs in never sees the old user's data.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    window.location.href = "/login";
+  }
+
+  const sidebarProps = {
+    user,
+    navItems,
+    pathname,
+    loggingOut,
+    onNavigate: () => setMobileOpen(false),
+    onSignOut: handleSignOut,
+  };
 
   return (
     <div className="flex min-h-screen bg-page">
       {/* Desktop Sidebar */}
       <aside className="hidden w-64 shrink-0 border-r border-line bg-card md:block">
-        <SidebarContent />
+        <SidebarContent {...sidebarProps} />
       </aside>
 
       {/* Mobile Drawer Backdrop */}
@@ -125,7 +158,7 @@ export default function DashboardShell({
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <SidebarContent />
+        <SidebarContent {...sidebarProps} />
       </aside>
 
       {/* Main Content Area */}
@@ -142,7 +175,7 @@ export default function DashboardShell({
               {mobileOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
             <span className="text-xs uppercase tracking-wider text-muted font-semibold hidden sm:inline">
-              Aurum Portal • {user.role}
+              Aurum Portal - {user.role}
             </span>
           </div>
 

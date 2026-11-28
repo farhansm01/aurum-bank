@@ -1,10 +1,12 @@
 import { desc, eq } from "drizzle-orm";
+import Link from "next/link";
 import { db } from "@/db";
 import { bankAccounts, loans, user } from "@/db/schema";
 import { requireRole } from "@/lib/session";
-import { formatDate, money } from "@/lib/format";
+import { money } from "@/lib/format";
 import StatusBadge from "@/components/StatusBadge";
 import AdminLoanReviewButtons from "@/features/loans/AdminLoanReviewButtons";
+import { ArrowRight } from "lucide-react";
 
 export default async function AdminLoansPage() {
   await requireRole(["admin"]);
@@ -40,7 +42,7 @@ export default async function AdminLoansPage() {
       </div>
 
       <div className="overflow-x-auto rounded-2xl border border-line bg-card shadow-xs">
-        <table className="w-full min-w-[850px] text-left text-sm">
+        <table className="w-full min-w-[900px] text-left text-sm">
           <thead className="border-b border-line bg-page text-xs font-semibold uppercase text-muted">
             <tr>
               <th className="px-5 py-3.5">Applicant</th>
@@ -49,13 +51,14 @@ export default async function AdminLoansPage() {
               <th className="px-5 py-3.5">Duration</th>
               <th className="px-5 py-3.5">Monthly Income</th>
               <th className="px-5 py-3.5">Status</th>
-              <th className="px-5 py-3.5">Action</th>
+              <th className="px-5 py-3.5">Decision</th>
+              <th className="px-5 py-3.5">Details</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
             {allLoans.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-5 py-8 text-center text-sm text-muted">
+                <td colSpan={8} className="px-5 py-8 text-center text-sm text-muted">
                   No loan applications found in the system.
                 </td>
               </tr>
@@ -85,6 +88,15 @@ export default async function AdminLoansPage() {
                     ) : (
                       <span className="text-xs text-muted">Decided</span>
                     )}
+                  </td>
+                  <td className="px-5 py-4">
+                    <Link
+                      href={`/admin/loans/${l.id}`}
+                      className="inline-flex items-center gap-1 text-xs font-medium text-gold hover:underline"
+                    >
+                      <span>Schedule</span>
+                      <ArrowRight size={12} />
+                    </Link>
                   </td>
                 </tr>
               ))

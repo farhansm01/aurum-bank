@@ -2,7 +2,7 @@ import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { bankAccounts, user } from "@/db/schema";
 import { requireRole } from "@/lib/session";
-import { formatDate, money } from "@/lib/format";
+import { money } from "@/lib/format";
 import StatusBadge from "@/components/StatusBadge";
 import AccountFreezeAction from "@/components/dashboard/AccountFreezeAction";
 

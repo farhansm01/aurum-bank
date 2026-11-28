@@ -35,6 +35,10 @@ export default function CustomerOverviewPage({ userName }: { userName: string })
     .reduce((sum, t) => sum + Number(t.amount || 0), 0);
 
   const activeLoans = loans.filter((l) => l.status === "active" || l.status === "approved");
+  const totalRemainingLoanBalance = activeLoans.reduce(
+    (sum, l) => sum + Number(l.remainingBalance || 0),
+    0
+  );
 
   // Chart data: customer spending history
   const spendingChartData = transactions
@@ -257,8 +261,13 @@ export default function CustomerOverviewPage({ userName }: { userName: string })
       {/* Active Loans Preview */}
       {activeLoans.length > 0 && (
         <div className="rounded-2xl border border-line bg-card p-6 shadow-xs">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-primary">Active Loans</h2>
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between mb-4">
+            <div>
+              <h2 className="text-lg font-bold text-primary">Active Loans ({activeLoans.length})</h2>
+              <p className="text-xs text-muted">
+                Total outstanding balance: <strong className="text-amber-700">${money(totalRemainingLoanBalance.toFixed(2))}</strong>
+              </p>
+            </div>
             <Link
               href="/dashboard/loans"
               className="text-xs font-medium text-gold hover:underline"
@@ -268,9 +277,10 @@ export default function CustomerOverviewPage({ userName }: { userName: string })
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             {activeLoans.map((l) => (
-              <div
+              <Link
                 key={l.id}
-                className="rounded-xl border border-line bg-page p-4"
+                href={`/dashboard/loans/${l.id}`}
+                className="rounded-xl border border-line bg-page p-4 transition hover:border-gold/50 block"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold uppercase text-muted capitalize">
@@ -284,7 +294,7 @@ export default function CustomerOverviewPage({ userName }: { userName: string })
                 <p className="mt-1 text-xs text-muted">
                   Remaining balance: ${money(l.remainingBalance || "0.00")} • Duration: {l.durationMonths}m
                 </p>
-              </div>
+              </Link>
             ))}
           </div>
         </div>

@@ -1,10 +1,12 @@
 import { and, desc, eq } from "drizzle-orm";
+import Link from "next/link";
 import { db } from "@/db";
 import { bankAccounts, loans } from "@/db/schema";
 import { requireRole } from "@/lib/session";
 import { formatDate, money } from "@/lib/format";
 import StatusBadge from "@/components/StatusBadge";
 import LoanApplicationForm from "@/features/loans/LoanApplicationForm";
+import { ArrowRight } from "lucide-react";
 
 export default async function CustomerLoansPage() {
   const session = await requireRole(["customer"]);
@@ -65,47 +67,59 @@ export default async function CustomerLoansPage() {
             {userLoans.map((l) => (
               <div
                 key={l.id}
-                className="rounded-2xl border border-line bg-card p-6 shadow-xs space-y-3"
+                className="flex flex-col justify-between rounded-2xl border border-line bg-card p-6 shadow-xs space-y-4 transition hover:border-gold/50"
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs uppercase font-bold text-muted capitalize">
-                    {l.type} Loan
-                  </span>
-                  <StatusBadge status={l.status} />
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs uppercase font-bold text-muted capitalize">
+                      {l.type} Loan
+                    </span>
+                    <StatusBadge status={l.status} />
+                  </div>
+
+                  <div>
+                    <span className="text-xs text-muted">Amount</span>
+                    <p className="text-3xl font-bold text-primary">
+                      ${money(l.amount)}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 pt-3 border-t border-line text-xs">
+                    <div>
+                      <span className="text-muted block">Duration</span>
+                      <span className="font-semibold text-primary">
+                        {l.durationMonths} Months
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-muted block">Monthly Income</span>
+                      <span className="font-semibold text-primary">
+                        ${money(l.monthlyIncome)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-muted block">Remaining Balance</span>
+                      <span className="font-semibold text-primary">
+                        ${money(l.remainingBalance || "0.00")}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-muted block">Submitted</span>
+                      <span className="font-semibold text-primary">
+                        {formatDate(l.createdAt)}
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
-                <div>
-                  <span className="text-xs text-muted">Amount</span>
-                  <p className="text-3xl font-bold text-primary">
-                    ${money(l.amount)}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 pt-3 border-t border-line text-xs">
-                  <div>
-                    <span className="text-muted block">Duration</span>
-                    <span className="font-semibold text-primary">
-                      {l.durationMonths} Months
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-muted block">Monthly Income</span>
-                    <span className="font-semibold text-primary">
-                      ${money(l.monthlyIncome)}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-muted block">Remaining Balance</span>
-                    <span className="font-semibold text-primary">
-                      ${money(l.remainingBalance || "0.00")}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-muted block">Submitted</span>
-                    <span className="font-semibold text-primary">
-                      {formatDate(l.createdAt)}
-                    </span>
-                  </div>
+                <div className="pt-3 border-t border-line">
+                  <Link
+                    href={`/dashboard/loans/${l.id}`}
+                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-line bg-page py-2 text-xs font-semibold text-primary transition hover:border-gold hover:text-gold"
+                  >
+                    <span>View Schedule & Repay</span>
+                    <ArrowRight size={13} />
+                  </Link>
                 </div>
               </div>
             ))}

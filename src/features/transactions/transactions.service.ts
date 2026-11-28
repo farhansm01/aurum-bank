@@ -36,7 +36,7 @@ export type TransferInput = {
   idempotencyKey: string;
 };
 
-async function checkPin(userId: string, pin: string) {
+export async function checkPin(userId: string, pin: string) {
   const [profile] = await db
     .select()
     .from(customerProfiles)

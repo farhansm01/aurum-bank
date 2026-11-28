@@ -15,28 +15,29 @@ export default async function CustomerTransactionsPage() {
 
   const accountIds = userAccounts.map((a) => a.id);
 
-  let rows: any[] = [];
-  if (accountIds.length > 0) {
-    rows = await db
-      .select({
-        id: transactions.id,
-        txnRef: transactions.txnRef,
-        type: transactions.type,
-        amount: transactions.amount,
-        fee: transactions.fee,
-        status: transactions.status,
-        description: transactions.description,
-        createdAt: transactions.createdAt,
-      })
-      .from(transactions)
-      .where(
-        or(
-          inArray(transactions.senderAccountId, accountIds),
-          inArray(transactions.receiverAccountId, accountIds)
-        )
-      )
-      .orderBy(desc(transactions.createdAt));
-  }
+  // 2. Get the transactions of those accounts (none if the user has no account)
+  const rows =
+    accountIds.length === 0
+      ? []
+      : await db
+          .select({
+            id: transactions.id,
+            txnRef: transactions.txnRef,
+            type: transactions.type,
+            amount: transactions.amount,
+            fee: transactions.fee,
+            status: transactions.status,
+            description: transactions.description,
+            createdAt: transactions.createdAt,
+          })
+          .from(transactions)
+          .where(
+            or(
+              inArray(transactions.senderAccountId, accountIds),
+              inArray(transactions.receiverAccountId, accountIds),
+            ),
+          )
+          .orderBy(desc(transactions.createdAt));
 
   return (
     <div className="space-y-6">

@@ -1,14 +1,13 @@
 import Link from "next/link";
 import { desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { customerProfiles, loans, moneyRequests, transactions, user } from "@/db/schema";
+import { customerProfiles, loans, moneyRequests, user } from "@/db/schema";
 import { requireRole } from "@/lib/session";
 import { formatDate, money } from "@/lib/format";
 import StatusBadge from "@/components/StatusBadge";
 import {
   FileCheck2,
   Users,
-  History,
   FileClock,
   ArrowRight,
   ShieldCheck,

@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 export default function AdminLoanReviewButtons({ loanId }: { loanId: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   async function handleAction(action: "approve" | "reject") {
     if (!confirm(`Are you sure you want to ${action} this loan?`)) {
@@ -14,7 +13,6 @@ export default function AdminLoanReviewButtons({ loanId }: { loanId: string }) {
     }
 
     setLoading(true);
-    setError("");
 
     const res = await fetch(`/api/loans/${loanId}`, {
       method: "PATCH",
@@ -26,7 +24,6 @@ export default function AdminLoanReviewButtons({ loanId }: { loanId: string }) {
     setLoading(false);
 
     if (!res.ok) {
-      setError(data.error ?? "Action failed.");
       alert(data.error ?? "Action failed.");
       return;
     }

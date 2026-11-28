@@ -1,11 +1,11 @@
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { bankAccounts } from "@/db/schema";
 import { requireRole } from "@/lib/session";
 import { money } from "@/lib/format";
 import StatusBadge from "@/components/StatusBadge";
 import Link from "next/link";
-import { ArrowLeftRight, PlusCircle } from "lucide-react";
+import { ArrowLeftRight } from "lucide-react";
 
 export default async function CustomerAccountsPage() {
   const session = await requireRole(["customer"]);
