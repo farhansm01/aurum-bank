@@ -1,14 +1,16 @@
-# Aurum Bank — Advanced Digital Banking Management System
+# Aurum Bank: Advanced Digital Banking Management System
+
+**Live demo:** https://aurum-bank-lime.vercel.app
 
 > **Simulated project. No real money is used.**
 
-Aurum Bank is an enterprise-grade, simulated digital banking platform built with Next.js (App Router), TypeScript, Tailwind CSS, PostgreSQL (via Drizzle ORM), Better Auth, and Redux Toolkit. It demonstrates financial business logic, strict transaction consistency, role-based authorization, and modern fintech UI architecture.
+Aurum Bank is a simulated digital banking platform built with Next.js (App Router), TypeScript, Tailwind CSS, PostgreSQL (via Drizzle ORM), Better Auth, and Redux Toolkit. It demonstrates financial business logic, strict transaction consistency, role-based authorization, and modern fintech UI architecture.
 
 ---
 
 ## 1. Project Overview
 
-Aurum Bank simulates a full commercial banking environment across three distinct user roles: **Admin**, **Bank Staff**, and **Customer**. Unlike basic CRUD dashboards, financial operations in Aurum Bank utilize database transactions with row-level locks, cryptographic transaction PIN verification with rate-limited lockouts, idempotency safeguards, and audit ledgers.
+Aurum Bank simulates a full commercial banking environment across three distinct user roles: **Admin**, **Bank Staff**, and **Customer**. Unlike basic CRUD dashboards, financial operations in Aurum Bank utilize database transactions with row-level locks, cryptographic transaction PIN verification with rate-limited lockouts, and idempotency safeguards.
 
 ---
 
@@ -94,10 +96,11 @@ Financial operations follow strict banking rules:
 
 ## 6. Database Schema
 
-All 12 tables are defined in `src/db/schema.ts`:
+All 13 tables are defined in `src/db/schema.ts`:
 
 - `user`: Identity, email, role (`customer`, `staff`, `admin`), status (`active`, `inactive`, `blocked`).
 - `session` & `account`: Better Auth session management and security tokens.
+- `verification`: Better Auth token and email verification records.
 - `customer_profiles`: Phone, address, hashed transaction PIN, failed PIN attempt counter, PIN lock expiry, KYC verification status.
 - `bank_accounts`: Account number, type (`savings`, `current`, `business`), balance (`numeric(14,2)`), limits, and status (`active`, `frozen`).
 - `transactions`: Immutable financial ledger records with unique `txnRef`, types, amounts, fees, status, and idempotency keys.
@@ -105,7 +108,21 @@ All 12 tables are defined in `src/db/schema.ts`:
 - `loans`: Application records, interest rates, durations, status, reviewer IDs, and disbursement transaction references.
 - `loan_installments`: Repayment schedule rows.
 - `loan_notes`: Staff internal notes on loan applications.
+- `notifications`: User messages and notifications for account and loan activities.
 - `bank_settings`: Global banking parameters (transfer limits, min balances, fees).
+
+---
+
+## Authentication Strategy
+Better Auth (a custom authentication solution), email and password. Roles (admin, staff, customer) and account status (active, inactive, blocked) are stored on the user. Every page uses requireRole() and every API route uses requireApiRole() on the server, so authorization never depends on hidden buttons. Blocked or inactive users are refused.
+
+## RTK Query Implementation
+RTK Query is not used. Server state is handled with Redux Toolkit async thunks (createAsyncThunk) inside feature slices (auth, accounts, transactions, loans), with loading and error state kept in each slice.
+
+## Known Limitations
+- Use the seeded demo accounts to test. A newly registered customer has no bank account or transaction PIN until staff set them up (a Set PIN page and staff account creation are not built yet).
+- Not implemented: PDF receipts, notification UI, two-factor authentication, dark mode, transaction details page, staff loan notes and forwarding.
+- Deployment note: after deploying, run npm run db:push and npm run db:seed against the production DATABASE_URL so the demo logins exist on the live site.
 
 ---
 
@@ -138,7 +155,7 @@ The database can be seeded with demo users across all three roles using `npm run
 
 1. **Clone the repository:**
    ```bash
-   git clone <YOUR_REPOSITORY_URL>
+   git clone https://github.com/farhansm01/aurum-bank.git
    cd aurum-bank
    ```
 
